@@ -336,7 +336,7 @@ regressionTestJob.with {
         }
     }
     publishers {
-            buildPipelinetrigger(projectFolderName + "/Reference_Application_Performance_Tests") {
+            buildPipelineTrigger(projectFolderName + "/Reference_Application_Performance_Tests") {
                 parameters {
                     predefinedProp("B", '${B}')
                     predefinedProp("PARENT_BUILD", '${PARENT_BUILD}')
