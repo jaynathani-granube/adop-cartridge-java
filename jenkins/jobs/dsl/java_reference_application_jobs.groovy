@@ -337,7 +337,7 @@ regressionTestJob.with {
     }
     publishers {
         downstreamParameterized {
-            trigger(projectFolderName + "/Reference_Application_Performance_Tests") {
+            buildPipelinetrigger(projectFolderName + "/Reference_Application_Performance_Tests") {
                 condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
