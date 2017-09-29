@@ -297,12 +297,6 @@ regressionTestJob.with {
                 }
             }
         }
-        publishHtml {
-            report('$WORKSPACE') {
-                reportName('ZAP security test report')
-                reportFiles('zap-test-report.html')
-            }
-        }
     }
 }
 
