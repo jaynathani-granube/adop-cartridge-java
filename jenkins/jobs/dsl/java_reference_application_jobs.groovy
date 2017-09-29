@@ -15,7 +15,8 @@ def unitTestJob = freeStyleJob(projectFolderName + "/Reference_Application_Unit_
 def codeAnalysisJob = freeStyleJob(projectFolderName + "/Reference_Application_Code_Analysis")
 def deployJob = freeStyleJob(projectFolderName + "/Reference_Application_Deploy")
 def regressionTestJob = freeStyleJob(projectFolderName + "/Reference_Application_Regression_Tests")
-def securityTestJob = freeStyleJob(projectFolderName + "/Reference_Security_Zap_Test")
+//remove the following comment to add the security test stage
+//def securityTestJob = freeStyleJob(projectFolderName + "/Reference_Security_Zap_Test") 
 def performanceTestJob = freeStyleJob(projectFolderName + "/Reference_Application_Performance_Tests")
 def deployJobToProdA = freeStyleJob(projectFolderName + "/Reference_Application_Deploy_ProdA")
 def deployJobToProdB = freeStyleJob(projectFolderName + "/Reference_Application_Deploy_ProdB")
@@ -271,6 +272,57 @@ regressionTestJob.with {
         env('PROJECT_NAME', projectFolderName)
     }
     label("java8")
+    //remove the following steps when adding new security test stage in pipeline
+    steps {
+        shell('''
+            |export SERVICE_NAME="$(echo ${PROJECT_NAME} | tr '/' '_')_${ENVIRONMENT_NAME}"
+            |echo "SERVICE_NAME=${SERVICE_NAME}" > env.properties
+            |
+            |echo "Running automation tests"
+            |echo "Setting values for container, project and app names"
+            |CONTAINER_NAME="owasp_zap-"${SERVICE_NAME}${BUILD_NUMBER}
+            |APP_IP=$( docker inspect --format '{{ .NetworkSettings.Networks.'"$DOCKER_NETWORK_NAME"'.IPAddress }}' ${SERVICE_NAME} )
+            |APP_URL=http://${APP_IP}:8080/petclinic
+            |ZAP_PORT="9090"
+            |
+            |echo CONTAINER_NAME=$CONTAINER_NAME >> env.properties
+            |echo APP_URL=$APP_URL >> env.properties
+            |echo ZAP_PORT=$ZAP_PORT >> env.properties
+            |
+            |echo "Starting OWASP ZAP Intercepting Proxy"
+            |JOB_WORKSPACE_PATH="/var/lib/docker/volumes/jenkins_slave_home/_data/${PROJECT_NAME}/Reference_Application_Regression_Tests"
+            |#JOB_WORKSPACE_PATH="$(docker inspect --format '{{ .Mounts.Networks.'"$DOCKER_NETWORK_NAME"'.IPAddress }}' ${CONTAINER_NAME} )/${JOB_NAME}"
+            |echo JOB_WORKSPACE_PATH=$JOB_WORKSPACE_PATH >> env.properties
+            |mkdir -p ${JOB_WORKSPACE_PATH}/owasp_zap_proxy/test-results
+            |docker run -it -d --net=$DOCKER_NETWORK_NAME -v ${JOB_WORKSPACE_PATH}/owasp_zap_proxy/test-results/:/opt/zaproxy/test-results/ -e affinity:container==jenkins-slave --name ${CONTAINER_NAME} -P nhantd/owasp_zap start zap-test
+            |
+            |sleep 30s
+            |ZAP_IP=$( docker inspect --format '{{ .NetworkSettings.Networks.'"$DOCKER_NETWORK_NAME"'.IPAddress }}' ${CONTAINER_NAME} )
+            |echo "ZAP_IP =  $ZAP_IP"
+            |echo ZAP_IP=$ZAP_IP >> env.properties
+            |echo ZAP_ENABLED="true" >> env.properties
+            |echo "Running Selenium tests through maven."
+            |'''.stripMargin()
+        )
+        environmentVariables {
+            propertiesFile('env.properties')
+        }
+        maven {
+            goals('clean -B test -DPETCLINIC_URL=${APP_URL} -DZAP_IP=${ZAP_IP} -DZAP_PORT=${ZAP_PORT} -DZAP_ENABLED=${ZAP_ENABLED}')
+            mavenInstallation("ADOP Maven")
+        }
+        shell('''
+            |echo "Stopping OWASP ZAP Proxy and generating report."
+            |docker stop ${CONTAINER_NAME}
+            |docker rm ${CONTAINER_NAME}
+            |
+            |docker run -i --net=$DOCKER_NETWORK_NAME -v ${JOB_WORKSPACE_PATH}/owasp_zap_proxy/test-results/:/opt/zaproxy/test-results/ -e affinity:container==jenkins-slave --name ${CONTAINER_NAME} -P nhantd/owasp_zap stop zap-test
+            |docker cp ${CONTAINER_NAME}:/opt/zaproxy/test-results/zap-test-report.html .
+            |sleep 10s
+            |docker rm ${CONTAINER_NAME}
+            |'''.stripMargin()
+        )
+    }
     configure { myProject ->
         myProject / 'publishers' << 'net.masterthought.jenkins.CucumberReportPublisher'(plugin: 'cucumber-reports@0.1.0') {
             jsonReportDirectory("")
@@ -288,7 +340,7 @@ regressionTestJob.with {
     }
     publishers {
         downstreamParameterized {
-            trigger(projectFolderName + "/Reference_Security_Zap_Test") {
+            trigger(projectFolderName + "/Reference_Application_Performance_Tests") {//change the path when you add new stage
                 condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
@@ -296,10 +348,16 @@ regressionTestJob.with {
                     predefinedProp("ENVIRONMENT_NAME", '${ENVIRONMENT_NAME}')
                 }
             }
+        }//remove the following publish html when you add another security stage
+        publishHtml {
+            report('$WORKSPACE') {
+                reportName('ZAP security test report')
+                reportFiles('zap-test-report.html')
+            }
         }
     }
 }
-
+/* //Remove all multiline comments in this part of the section when you want to add another pipeline stage called Reference_Security_Zap_Test
 securityTestJob.with{
     description("This job runs a penetration test to verify proper security of java reference application")
     parameters {
@@ -312,9 +370,9 @@ securityTestJob.with{
             remote {
                 url(regressionTestGitUrl)
                 credentials("adop-jenkins-master")
-            }
-            branch("*/master")
-        }
+            }*/
+//            branch("*/master")
+/*        }
     }
     wrappers {
         preBuildCleanup()
@@ -396,7 +454,7 @@ securityTestJob.with{
         }
     }
 }
-
+*/
 performanceTestJob.with {
     description("This job run the Jmeter test for the java reference application")
     parameters {
