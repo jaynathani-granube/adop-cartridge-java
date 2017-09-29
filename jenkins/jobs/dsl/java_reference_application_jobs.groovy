@@ -336,7 +336,7 @@ regressionTestJob.with {
         }
     }
     publishers {
-            downstreamParameterized {
+        downstreamParameterized {
             trigger(projectFolderName + "/Reference_Application_Performance_Tests") {
                 condition("UNSTABLE_OR_BETTER")
                 parameters {
