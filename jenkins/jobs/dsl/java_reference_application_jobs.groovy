@@ -336,20 +336,23 @@ regressionTestJob.with {
         }
     }
     publishers {
-            buildPipelineTrigger(projectFolderName + "/Reference_Application_Performance_Tests") {
+            downstreamParameterized {
+            trigger(projectFolderName + "/Reference_Application_Performance_Tests") {
+                condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
                     predefinedProp("PARENT_BUILD", '${PARENT_BUILD}')
                     predefinedProp("ENVIRONMENT_NAME", '${ENVIRONMENT_NAME}')
                 }
             }
-            publishHtml {
-                report('$WORKSPACE') {
-                    reportName('ZAP security test report')
-                    reportFiles('zap-test-report.html')
-                }
+        }
+        publishHtml {
+            report('$WORKSPACE') {
+                reportName('ZAP security test report')
+                reportFiles('zap-test-report.html')
             }
         }
+    }
 }
 
 performanceTestJob.with {
