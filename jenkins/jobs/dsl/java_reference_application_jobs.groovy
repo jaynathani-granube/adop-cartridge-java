@@ -16,7 +16,7 @@ def codeAnalysisJob = freeStyleJob(projectFolderName + "/Reference_Application_C
 def deployJob = freeStyleJob(projectFolderName + "/Reference_Application_Deploy")
 def regressionTestJob = freeStyleJob(projectFolderName + "/Reference_Application_Regression_Tests")
 //remove the following comment to add the security test stage
-//def securityTestJob = freeStyleJob(projectFolderName + "/Reference_Security_Zap_Test") 
+def securityTestJob = freeStyleJob(projectFolderName + "/Reference_Security_Zap_Test") 
 def performanceTestJob = freeStyleJob(projectFolderName + "/Reference_Application_Performance_Tests")
 def deployJobToProdA = freeStyleJob(projectFolderName + "/Reference_Application_Deploy_ProdA")
 def deployJobToProdB = freeStyleJob(projectFolderName + "/Reference_Application_Deploy_ProdB")
@@ -273,7 +273,7 @@ regressionTestJob.with {
     }
     label("java8")
     //remove the following steps when adding new security test stage in pipeline
-    steps {
+/*    steps {
         shell('''
             |export SERVICE_NAME="$(echo ${PROJECT_NAME} | tr '/' '_')_${ENVIRONMENT_NAME}"
             |echo "SERVICE_NAME=${SERVICE_NAME}" > env.properties
@@ -322,7 +322,7 @@ regressionTestJob.with {
             |docker rm ${CONTAINER_NAME}
             |'''.stripMargin()
         )
-    }
+    }*/
     configure { myProject ->
         myProject / 'publishers' << 'net.masterthought.jenkins.CucumberReportPublisher'(plugin: 'cucumber-reports@0.1.0') {
             jsonReportDirectory("")
@@ -340,7 +340,7 @@ regressionTestJob.with {
     }
     publishers {
         downstreamParameterized {
-            trigger(projectFolderName + "/Reference_Application_Performance_Tests") {//change the path when you add new stage
+            trigger(projectFolderName + "/Reference_Security_Zap_Test") {//change the path when you add new stage
                 condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
@@ -349,15 +349,15 @@ regressionTestJob.with {
                 }
             }
         }//remove the following publish html when you add another security stage
-        publishHtml {
+    /*    publishHtml {
             report('$WORKSPACE') {
                 reportName('ZAP security test report')
                 reportFiles('zap-test-report.html')
             }
-        }
+        }*/
     }
 }
-/* //Remove all multiline comments in this part of the section when you want to add another pipeline stage called Reference_Security_Zap_Test
+ //Remove all multiline comments in this part of the section when you want to add another pipeline stage called Reference_Security_Zap_Test
 securityTestJob.with{
     description("This job runs a penetration test to verify proper security of java reference application")
     parameters {
@@ -370,9 +370,9 @@ securityTestJob.with{
             remote {
                 url(regressionTestGitUrl)
                 credentials("adop-jenkins-master")
-            }*/
-//            branch("*/master")
-/*        }
+            }
+            branch("*/master")
+        }
     }
     wrappers {
         preBuildCleanup()
@@ -454,7 +454,7 @@ securityTestJob.with{
         }
     }
 }
-*/
+
 performanceTestJob.with {
     description("This job run the Jmeter test for the java reference application")
     parameters {
