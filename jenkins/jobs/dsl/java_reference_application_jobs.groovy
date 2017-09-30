@@ -340,7 +340,7 @@ regressionTestJob.with {
     }
     publishers {
         downstreamParameterized {
-            trigger(projectFolderName + "/Reference_Security_Zap_Test") {//change the path when you add new stage
+            buildPipelineTrigger(projectFolderName + "/Reference_Security_Zap_Test") {//change the path when you add new stage
                 condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
