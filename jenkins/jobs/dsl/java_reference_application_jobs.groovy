@@ -339,13 +339,18 @@ regressionTestJob.with {
         }
     }
     publishers {
-            buildPipelineTrigger(projectFolderName + "/Reference_Application_Performance_Tests") {//change the path when you add new stage
+        //remove the downstreamParameterized feature along with its parantheses
+        //replace trigger feature with buildPipelineTrigger feature
+        downstreamParameterized {
+            trigger(projectFolderName + "/Reference_Application_Performance_Tests") {
+                condition("UNSTABLE_OR_BETTER")
                 parameters {
                     predefinedProp("B", '${B}')
                     predefinedProp("PARENT_BUILD", '${PARENT_BUILD}')
                     predefinedProp("ENVIRONMENT_NAME", '${ENVIRONMENT_NAME}')
                 }
             }
+        }
         //remove the following publish html when you add another security stage
         publishHtml {
             report('$WORKSPACE') {
