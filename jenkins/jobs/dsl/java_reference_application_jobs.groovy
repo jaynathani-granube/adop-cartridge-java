@@ -370,8 +370,8 @@ regressionTestJob.with {
                 credentials("adop-jenkins-master")
             }*/
    //         branch("*/master")
-        }
- /*   }
+ /*       }
+    }
     wrappers {
         preBuildCleanup()
         injectPasswords()
