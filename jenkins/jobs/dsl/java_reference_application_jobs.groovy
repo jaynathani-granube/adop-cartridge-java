@@ -30,7 +30,7 @@ pipelineView.with {
     selectedJob(projectFolderName + "/Reference_Application_Build")
     showPipelineParameters()
     showPipelineDefinitionHeader()
-    refreshFrequency(5)
+    refreshFrequency(1)
 }
 
 buildAppJob.with {
